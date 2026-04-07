@@ -438,7 +438,7 @@ static void inject_into_game(pid_t pid, const char *title_id,
 
 int main()
 {
-    plugin_log("=== PLUGIN LOADER v1.11 + BACKPORK ===");
+    plugin_log("=== PLUGIN LOADER v1.12 + BACKPORK ===");
 
     payload_args_t *args = payload_get_args();
     kernel_base = args->kdata_base_addr;
@@ -473,7 +473,7 @@ int main()
         return -1;
     }
 
-    printf_notification("Plugin Loader v1.11 started     \nBy @84Ciss ");
+    printf_notification("Plugin Loader v1.12 started     \nBy @84Ciss ");
     plugin_log("Monitoring SceSysCore.elf (pid %d) for game launches...", syscore_pid);
 
     pid_t child_pid = -1;
