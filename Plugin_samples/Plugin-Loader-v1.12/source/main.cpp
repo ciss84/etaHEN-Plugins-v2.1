@@ -373,8 +373,8 @@ static void inject_into_game(pid_t pid, const char *title_id,
         plugin_log("[PLT] Hijacker OK - text_base: 0x%llx", text_base);
 
         // ← AJOUTER ICI
-        hijacker->jailbreak(true);  // escape sandbox + escalade privileges
-        plugin_log("[PLT] Jailbreak applied to pid %d", pid);
+        //hijacker->jailbreak(true);  // escape sandbox + escalade privileges
+        //plugin_log("[PLT] Jailbreak applied to pid %d", pid);
 
         // Suspend before injection
         sceKernelPrepareToSuspendProcess(pid);
