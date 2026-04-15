@@ -372,6 +372,10 @@ static void inject_into_game(pid_t pid, const char *title_id,
         uint64_t text_base = hijacker->getEboot()->imagebase();
         plugin_log("[PLT] Hijacker OK - text_base: 0x%llx", text_base);
 
+        // ← AJOUTER ICI
+        hijacker->jailbreak(true);  // escape sandbox + escalade privileges
+        plugin_log("[PLT] Jailbreak applied to pid %d", pid);
+
         // Suspend before injection
         sceKernelPrepareToSuspendProcess(pid);
         sceKernelSuspendProcess(pid);
