@@ -89,19 +89,18 @@ bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_pa
   
   GameStuff stuff{*hijacker};
 
-  //UniquePtr<SharedLib> lib = hijacker->getLib("libScePad.sprx");
-  //stuff.scePadReadState = hijacker->getFunctionAddress(lib.get(), nid::scePadReadState);
+  /*UniquePtr<SharedLib> lib = hijacker->getLib("libScePad.sprx");
+  stuff.scePadReadState = hijacker->getFunctionAddress(lib.get(), nid::scePadReadState);
 
-  /*if (stuff.scePadReadState == 0) {
+  if (stuff.scePadReadState == 0) {
     plugin_log("FAILED: scePadReadState not found");
     return false;
   }*/
   
-  UniquePtr<SharedLib> libkernel = hijacker->getLib("libkernel.sprx");
-  if (!libkernel) libkernel = hijacker->getLib("libkernel_sys.sprx");
-  stuff.sceKernelLoadStartModule = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelLoadStartModule);
-  stuff.debugout                 = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelDebugOutText);
-  stuff.sceKernelDlsym           = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelDlsym);
+  UniquePtr<SharedLib> lib = hijacker->getLib("libkernel.sprx");
+  stuff.sceKernelLoadStartModule = hijacker->getFunctionAddress(lib.get(), nid::sceKernelLoadStartModule);
+  stuff.debugout                 = hijacker->getFunctionAddress(lib.get(), nid::sceKernelDebugOutText);
+  stuff.sceKernelDlsym           = hijacker->getFunctionAddress(lib.get(), nid::sceKernelDlsym);
 
   stuff.ASLR_Base = alsr_b;
   strncpy(stuff.prx_path, prx_path, sizeof(stuff.prx_path) - 1);
