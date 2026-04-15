@@ -100,7 +100,7 @@ bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_pa
   UniquePtr<SharedLib> libkernel = hijacker->getLib("libkernel.sprx");
   if (!libkernel) libkernel = hijacker->getLib("libkernel_sys.sprx");
   stuff.sceKernelLoadStartModule = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelLoadStartModule);
-  stuff.sceKernelDebugOutText    = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelDebugOutText);
+  stuff.debugout                 = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelDebugOutText);
   stuff.sceKernelDlsym           = hijacker->getFunctionAddress(libkernel.get(), nid::sceKernelDlsym);
 
   stuff.ASLR_Base = alsr_b;
