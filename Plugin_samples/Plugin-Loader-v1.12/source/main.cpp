@@ -384,25 +384,26 @@ static void inject_into_game(pid_t pid, const char *title_id,
                 sceKernelPrepareToResumeProcess(pid);
                 sceKernelResumeProcess(pid);
 
-                // ── Attente chargement PRX (~3s) ──────────────────────────
-                plugin_log("[PLT] Waiting 3s for shellcode to fire...");
-                sleep(3);
-
-                // ── DIAGNOSTIC: lire le flag 'loaded' depuis le process ───
-                // Si loaded == 0 apres 3s, le shellcode n'a pas fire:
-                //   → sceKernelLoadStartModule a echoue (path invisible depuis sandbox?)
-                //   → ou le shellcode n'a jamais ete appele (scePadReadState non appele?)
+                // ── Polling loaded flag (max 30s) ─────────────────────────
                 if (stuff_addr != 0) {
+                    constexpr int POLL_US      = 500000; // 500ms
+                    constexpr int MAX_POLLS    = 60;     // 30s max
                     int32_t loaded_val = 0;
-                    // offset 0x128 = offsetof(GameStuff, loaded) — verifie par static_assert
-                    hijacker->read(stuff_addr + 0x128, loaded_val);
+                    int     polls      = 0;
+
+                    plugin_log("[PLT] Waiting for shellcode to fire (max 30s)...");
+                    while (polls < MAX_POLLS) {
+                        usleep(POLL_US);
+                        polls++;
+                        hijacker->read(stuff_addr + 0x128, loaded_val);
+                        if (loaded_val != 0) break;
+                    }
 
                     if (loaded_val != 0) {
-                        plugin_log("[DIAG] OK: shellcode a fire pour %s (loaded=%d)", prx.path.c_str(), loaded_val);
-                        plugin_log("[DIAG] module_start DOIT etre appele. Si ce n'est pas le cas,");
-                        plugin_log("[DIAG] verifier: export visibility du PRX, SDK version, SELF signing.");
+                        plugin_log("[DIAG] OK: shellcode fired after ~%ds for %s (loaded=%d)",
+                                   polls / 2, prx.path.c_str(), loaded_val);
                     } else {
-                        plugin_log("[DIAG] WARN: shellcode N'A PAS fire pour %s apres 3s!", prx.path.c_str());
+                        plugin_log("[DIAG] WARN: shellcode N'A PAS fire pour %s apres 30s!", prx.path.c_str());
                         plugin_log("[DIAG] Causes possibles:");
                         plugin_log("[DIAG]   1. scePadReadState non appele par le jeu pendant cette fenetre");
                         plugin_log("[DIAG]   2. sceKernelLoadStartModule a echoue (verifier adresse loggee)");
