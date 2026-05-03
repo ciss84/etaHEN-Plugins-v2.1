@@ -126,7 +126,6 @@ bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_pa
   auto index = meta->getSymbolTable().getSymbolIndex(nid::scePadReadState);
 
   plugin_log("[HookGame] PLT symbol index pour scePadReadState: %u", index);
-  plugin_log("[HookGame] Nombre d'entrees PLT: %zu", plttab.size());
 
   for (const auto &plt : plttab) {
     if (ELF64_R_SYM(plt.r_info) == index) {
