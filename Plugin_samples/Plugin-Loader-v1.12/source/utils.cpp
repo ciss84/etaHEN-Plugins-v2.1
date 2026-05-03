@@ -86,6 +86,10 @@ bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_pa
 
   GameStuff stuff{*hijacker};
 
+  // ── Recuperer scePadReadState depuis libScePad.sprx EN PREMIER ──────────
+  UniquePtr<SharedLib> lib = hijacker->getLib("libScePad.sprx");
+  stuff.scePadReadState = hijacker->getFunctionAddress(lib.get(), nid::scePadReadState);
+
   // ── Diagnostic adresses critiques ────────────────────────────────────────
   plugin_log("[HookGame] scePadReadState addr         : 0x%llx", stuff.scePadReadState);
   plugin_log("[HookGame] sceKernelLoadStartModule addr : 0x%llx", stuff.sceKernelLoadStartModule);
@@ -93,20 +97,15 @@ bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_pa
   plugin_log("[HookGame] debugout addr                 : 0x%llx", stuff.debugout);
 
   if (stuff.sceKernelLoadStartModule == 0) {
-    plugin_log("[HookGame] FATAL: sceKernelLoadStartModule == 0 ! NID introuvable dans libkernel sur ce FW.");
+    plugin_log("[HookGame] FATAL: sceKernelLoadStartModule == 0 ! NID introuvable dans libkernel.");
     plugin_log("[HookGame] module_start NE SERA JAMAIS APPELE.");
     return false;
   }
 
   if (stuff.scePadReadState == 0) {
-    plugin_log("[HookGame] FATAL: scePadReadState == 0 !");
+    plugin_log("[HookGame] FATAL: scePadReadState introuvable dans libScePad.sprx");
     return false;
   }
-
-  UniquePtr<SharedLib> lib = hijacker->getLib("libScePad.sprx");
-  stuff.scePadReadState = hijacker->getFunctionAddress(lib.get(), nid::scePadReadState);
-
-  plugin_log("[HookGame] scePadReadState (libScePad)   : 0x%llx", stuff.scePadReadState);
 
   if (stuff.scePadReadState == 0) {
     plugin_log("[HookGame] FAILED: scePadReadState introuvable dans libScePad.sprx");
