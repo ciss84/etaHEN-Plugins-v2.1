@@ -218,14 +218,8 @@ static constexpr GameBuilder BUILDER_TEMPLATE {
     0xff, 0x12,
     // [60-61] MOV EBP, EAX (save return value)
     0x89, 0xc5,
-    // [62-64] TEST R15D, R15D (handle <= 0 ?)
-    0x45, 0x85, 0xff,
-    // [65-66] JLE epilogue
-    0x7e, 0x39,
-    // [67-68] TEST EBP, EBP (scePadReadState retourne != 0 ?)
-    0x85, 0xed,
-    // [69-70] JNZ epilogue
-    0x75, 0x35,
+    // [62-70] NOP x9 — bypass handle + retval checks (test FW7.6x+)
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
     // [71-77] FIX FW10: connected check supprime (7x NOP)
     //         Ancien: CMP BYTE PTR [R14+0x4C],0 / JE skip
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
