@@ -13,7 +13,7 @@
 #include <sys/sysctl.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Structures / externs from backpork
+//  Structures / externs
 // ─────────────────────────────────────────────────────────────────────────────
 
 #define IOVEC_ENTRY(x) {x ? (char *)x : 0, x ? strlen(x) + 1 : 0}
@@ -29,7 +29,6 @@ typedef struct app_info {
 extern "C" {
     int sceKernelGetAppInfo(pid_t pid, app_info_t *info);
 
-    // Plugin Loader originals
     int sceSystemServiceGetAppIdOfRunningBigApp();
     int sceSystemServiceGetAppTitleId(int app_id, char *title_id);
 
@@ -51,13 +50,13 @@ extern "C" {
 
 void sig_handler(int signo)
 {
-    printf_notification("Plugin Loader crashed with signal %d    ", signo);
+    printf_notification("Plugin Loader crashed: signal %d    ", signo);
     printBacktraceForCrash();
     exit(-1);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Helpers from backpork: find SceSysCore PID
+//  Helpers: find SceSysCore PID
 // ─────────────────────────────────────────────────────────────────────────────
 
 static pid_t find_pid(const char *name)
@@ -93,7 +92,7 @@ static pid_t find_pid(const char *name)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  fakelib / unionfs helpers (backpork)
+//  fakelib / unionfs helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 static int mount_unionfs(const char *src, const char *dst)
@@ -146,7 +145,6 @@ static char *find_random_folder(const char *title_id, int sandbox_num)
     return nullptr;
 }
 
-// Returns heap-allocated mount path on success, nullptr on failure.
 static char *try_mount_fakelib(const char *title_id, const char *sandbox_id)
 {
     char fakelib_src[PATH_MAX];
@@ -218,7 +216,7 @@ static void wait_for_pid_exit(pid_t pid)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Sandbox cleanup (backpork)
+//  Sandbox cleanup
 // ─────────────────────────────────────────────────────────────────────────────
 
 static int cleanup_directory(const char *path)
@@ -278,7 +276,7 @@ static void cleanup_after_game(pid_t pid, const char *sandbox_id, char *fakelib_
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Core injection: PLT hook (Plugin Loader) + optional fakelib (backpork)
+//  Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 static bool IsProcessRunning(pid_t pid)
@@ -289,16 +287,13 @@ static bool IsProcessRunning(pid_t pid)
 
 uintptr_t kernel_base = 0;
 
-// Returns sandbox_id built from title_id + highest sandbox number.
-// sandbox_id must be at least 32 bytes.
 static bool resolve_sandbox_id(const char *title_id, char *sandbox_id, size_t sandbox_id_size)
 {
-    // Retry until sandbox directory appears (game creates it right after exec).
     int sandbox_num = -1;
     for (int attempt = 0; attempt < 20 && sandbox_num < 0; attempt++) {
         sandbox_num = find_highest_sandbox_number(title_id);
         if (sandbox_num < 0)
-            usleep(50000); // 50ms
+            usleep(50000);
     }
 
     if (sandbox_num < 0) {
@@ -311,6 +306,10 @@ static bool resolve_sandbox_id(const char *title_id, char *sandbox_id, size_t sa
     return true;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Core injection: PLT hook + fakelib + diagnostic readback
+// ─────────────────────────────────────────────────────────────────────────────
+
 static void inject_into_game(pid_t pid, const char *title_id,
                               const std::vector<PRXConfig> &prx_list,
                               const GameInjectorConfig &config)
@@ -319,25 +318,22 @@ static void inject_into_game(pid_t pid, const char *title_id,
     plugin_log("Injecting into %s (pid %d)", title_id, pid);
     plugin_log("========================================");
 
-    // ── 1. FAKELIB FIRST — must be mounted before game loads its libs ─────
-    //    The dynamic linker runs right after exec, so we have very little time.
+    // ── 1. FAKELIB ────────────────────────────────────────────────────────
     char sandbox_id[32] = {};
     char *fakelib_mount = nullptr;
 
-    // Fakelib = PPSA only + peut etre desactive via "fakelib = false" dans le INI
-    auto fakelib_cfg = config.fakelib_enabled.find(std::string(title_id));
+    auto fakelib_cfg  = config.fakelib_enabled.find(std::string(title_id));
     bool fakelib_wanted = (strncmp(title_id, "PPSA", 4) == 0) &&
                           (fakelib_cfg == config.fakelib_enabled.end() || fakelib_cfg->second);
 
     if (fakelib_wanted && resolve_sandbox_id(title_id, sandbox_id, sizeof(sandbox_id))) {
-        // Wait for app0/fakelib to be visible (sandbox is being set up)
         char fakelib_check[PATH_MAX];
         snprintf(fakelib_check, sizeof(fakelib_check),
                  "/mnt/sandbox/%s/app0/fakelib", sandbox_id);
 
         struct stat st;
         for (int t = 0; t < 30 && stat(fakelib_check, &st) != 0; t++)
-            usleep(50000); // up to 1.5s
+            usleep(50000);
 
         if (stat(fakelib_check, &st) == 0) {
             plugin_log("[Fakelib] app0/fakelib found, mounting NOW");
@@ -349,16 +345,16 @@ static void inject_into_game(pid_t pid, const char *title_id,
         }
     }
 
-    // ── 2. Wait a bit for process to reach a hookable state ───────────────
+    // ── 2. Attente initialisation process ────────────────────────────────
     plugin_log("[PLT] Waiting for process initialization...");
     int alive = 0;
     for (int i = 0; i < 10; i++) {
-        usleep(100000); // 100ms × 10 = 1s
+        usleep(100000);
         if (IsProcessRunning(pid)) alive++;
     }
     plugin_log("[PLT] Process alive: %d/10 checks", alive);
 
-    // ── 3. PLT Hook (Plugin Loader) ───────────────────────────────────────
+    // ── 3. PLT Hook ───────────────────────────────────────────────────────
     UniquePtr<Hijacker> hijacker = Hijacker::getHijacker(pid);
     if (!hijacker) {
         plugin_log("[PLT] First Hijacker attempt failed, retrying in 1s...");
@@ -372,23 +368,48 @@ static void inject_into_game(pid_t pid, const char *title_id,
         uint64_t text_base = hijacker->getEboot()->imagebase();
         plugin_log("[PLT] Hijacker OK - text_base: 0x%llx", text_base);
 
-        // Suspend before injection
         sceKernelPrepareToSuspendProcess(pid);
         sceKernelSuspendProcess(pid);
         usleep(500000);
 
         for (const auto &prx : prx_list) {
-            plugin_log("[PLT] Injecting: %s (delay: %d)", prx.path.c_str(), prx.frame_delay);
+            plugin_log("[PLT] Injecting: %s (delay: %d frames)", prx.path.c_str(), prx.frame_delay);
 
-            if (HookGame(hijacker, text_base, prx.path.c_str(), false, prx.frame_delay)) {
-                plugin_log("[PLT] SUCCESS: %s", prx.path.c_str());
+            uintptr_t stuff_addr = 0;
+
+            if (HookGame(hijacker, text_base, prx.path.c_str(), false, prx.frame_delay, &stuff_addr)) {
+                plugin_log("[PLT] Hook OK: %s | stuff_addr: 0x%llx", prx.path.c_str(), stuff_addr);
                 success_count++;
 
                 sceKernelPrepareToResumeProcess(pid);
                 sceKernelResumeProcess(pid);
-                
-                // Attends que le PRX se charge (~2-3 secondes)
+
+                // ── Attente chargement PRX (~3s) ──────────────────────────
+                plugin_log("[PLT] Waiting 3s for shellcode to fire...");
                 sleep(3);
+
+                // ── DIAGNOSTIC: lire le flag 'loaded' depuis le process ───
+                // Si loaded == 0 apres 3s, le shellcode n'a pas fire:
+                //   → sceKernelLoadStartModule a echoue (path invisible depuis sandbox?)
+                //   → ou le shellcode n'a jamais ete appele (scePadReadState non appele?)
+                if (stuff_addr != 0) {
+                    int32_t loaded_val = 0;
+                    // offset 0x128 = offsetof(GameStuff, loaded) — verifie par static_assert
+                    hijacker->read(stuff_addr + 0x128, loaded_val);
+
+                    if (loaded_val != 0) {
+                        plugin_log("[DIAG] OK: shellcode a fire pour %s (loaded=%d)", prx.path.c_str(), loaded_val);
+                        plugin_log("[DIAG] module_start DOIT etre appele. Si ce n'est pas le cas,");
+                        plugin_log("[DIAG] verifier: export visibility du PRX, SDK version, SELF signing.");
+                    } else {
+                        plugin_log("[DIAG] WARN: shellcode N'A PAS fire pour %s apres 3s!", prx.path.c_str());
+                        plugin_log("[DIAG] Causes possibles:");
+                        plugin_log("[DIAG]   1. scePadReadState non appele par le jeu pendant cette fenetre");
+                        plugin_log("[DIAG]   2. sceKernelLoadStartModule a echoue (verifier adresse loggee)");
+                        plugin_log("[DIAG]   3. PRX path pas visible depuis le sandbox du jeu");
+                        printf_notification("WARN: shellcode skip %s!\nVoir log pour cause.    ", prx.path.c_str());
+                    }
+                }
 
                 if (&prx != &prx_list.back()) {
                     sceKernelPrepareToSuspendProcess(pid);
@@ -396,7 +417,7 @@ static void inject_into_game(pid_t pid, const char *title_id,
                     usleep(2500000);
                 }
             } else {
-                plugin_log("[PLT] FAILED: %s", prx.path.c_str());
+                plugin_log("[PLT] FAILED to hook: %s", prx.path.c_str());
             }
         }
 
@@ -406,6 +427,7 @@ static void inject_into_game(pid_t pid, const char *title_id,
         sceKernelResumeProcess(pid);
 
         plugin_log("[PLT] %d/%zu PRX injected", success_count, prx_list.size());
+
         if (fakelib_wanted)
             printf_notification("%d/%zu PRX injected into %s     \nFakelib: %s",
                                 success_count, prx_list.size(), title_id,
@@ -422,7 +444,7 @@ static void inject_into_game(pid_t pid, const char *title_id,
             printf_notification("PLT hook failed for %s     ", title_id);
     }
 
-    // ── 4. Wait for game exit then cleanup fakelib ────────────────────────
+    // ── 4. Attendre exit + cleanup ────────────────────────────────────────
     plugin_log("[Wait] Waiting for game (pid %d) to exit...", pid);
     wait_for_pid_exit(pid);
 
@@ -433,17 +455,16 @@ static void inject_into_game(pid_t pid, const char *title_id,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  main: kqueue monitoring on SceSysCore (backpork approach)
+//  main: kqueue monitoring sur SceSysCore
 // ─────────────────────────────────────────────────────────────────────────────
 
 int main()
 {
-    plugin_log("=== PLUGIN LOADER v1.12.1 + BACKPORK ===");
+    plugin_log("=== PLUGIN LOADER v1.12.2 + FW10 DIAG ===");
 
     payload_args_t *args = payload_get_args();
     kernel_base = args->kdata_base_addr;
 
-    // Signal handlers
     struct sigaction sa{};
     sa.sa_handler = sig_handler;
     sigemptyset(&sa.sa_mask);
@@ -459,7 +480,7 @@ int main()
     }
     plugin_log("SceSysCore.elf pid: %d", syscore_pid);
 
-    // ── kqueue setup on SceSysCore ────────────────────────────────────────
+    // ── kqueue setup ─────────────────────────────────────────────────────
     int kq = kqueue();
     if (kq == -1) { perror("kqueue"); return -1; }
 
@@ -473,8 +494,8 @@ int main()
         return -1;
     }
 
-    printf_notification("Plugin Loader v1.12 started     \nBy @84Ciss ");
-    plugin_log("Monitoring SceSysCore.elf (pid %d) for game launches...", syscore_pid);
+    printf_notification("Plugin Loader v1.12.2 started     \nBy @84Ciss ");
+    plugin_log("Monitoring SceSysCore.elf (pid %d)...", syscore_pid);
 
     pid_t child_pid = -1;
 
@@ -487,11 +508,9 @@ int main()
         if (nev < 0) { plugin_log("kevent error: %s", strerror(errno)); continue; }
         if (nev == 0) continue;
 
-        // Child forked → remember its pid
         if (ev.fflags & NOTE_CHILD)
             child_pid = (pid_t)ev.ident;
 
-        // Child exec'd → it's a new process, check if it's a game
         if ((ev.fflags & NOTE_EXEC) && child_pid != -1 && (pid_t)ev.ident == child_pid)
         {
             app_info_t appinfo{};
@@ -501,7 +520,6 @@ int main()
                 continue;
             }
 
-            // title_id is at most 9 chars (e.g. PPSA12345)
             char title_id[10] = {};
             memcpy(title_id, appinfo.title_id, 9);
 
@@ -515,14 +533,12 @@ int main()
 
             plugin_log("Game detected: %s (pid %d)", title_id, child_pid);
 
-            // Load config fresh every time
             GameInjectorConfig config = parse_injector_config();
             auto it = config.games.find(std::string(title_id));
 
             if (it == config.games.end()) {
                 plugin_log("No PLT config for %s - fakelib only", title_id);
 
-                // Mount fakelib ASAP even without PRX config
                 char sid[32] = {};
                 char *fml = nullptr;
                 auto fml_cfg = config.fakelib_enabled.find(std::string(title_id));
@@ -548,7 +564,6 @@ int main()
                 continue;
             }
 
-            // We have PRX config → full injection
             pid_t game_pid = child_pid;
             child_pid = -1;
 

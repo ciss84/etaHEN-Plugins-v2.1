@@ -91,8 +91,6 @@
 		OrbisPadTouch touch[ORBIS_PAD_MAX_TOUCH_NUM];
 	} OrbisPadTouchData;
 
-	// The ScePadData Structure contains data polled from the DS4 controller. This includes button states, analogue
-	// positional data, and touchpad related data.
 	typedef struct OrbisPadData
 	{
 		uint32_t buttons;
@@ -111,7 +109,6 @@
 		uint8_t unknown[15];
 	} OrbisPadData;
 
-	// The PadColor structure contains RGBA for the DS4 controller lightbar.
 	typedef struct OrbisPadColor
 	{
 		uint8_t r;
@@ -126,12 +123,11 @@
 		uint8_t smMotor;
 	} OrbisPadVibeParam;
 
-	// Vendor information about which controller to open for scePadOpenExt
 	typedef struct _OrbisPadExtParam
 	{
 		uint16_t vendorId;
 		uint16_t productId;
-		uint16_t productId_2; // this is in here twice?
+		uint16_t productId_2;
 		uint8_t unknown[10];
 	} OrbisPadExtParam;
 
@@ -150,51 +146,132 @@
 	} OrbisPadInformation;
 
 struct GameStuff {
-  uintptr_t scePadReadState;        // +0x00
-  uintptr_t debugout;                // +0x08
-  uintptr_t sceKernelLoadStartModule; // +0x10
-  uintptr_t sceKernelDlsym;          // +0x18
-  uint64_t ASLR_Base = 0;            // +0x20
-  char prx_path[256];                 // +0x28
-  int loaded = 0;                     // +0x128
-  uint64_t game_hash = 0;            // +0x12C (padding fait que c'est a +0x130)
-  int frame_delay = 300;             // +0x138
-  int frame_counter = 0;             // +0x13C
+  uintptr_t scePadReadState;          // +0x00
+  uintptr_t debugout;                  // +0x08
+  uintptr_t sceKernelLoadStartModule;  // +0x10
+  uintptr_t sceKernelDlsym;           // +0x18
+  uint64_t ASLR_Base = 0;             // +0x20
+  char prx_path[256];                  // +0x28
+  int loaded = 0;                      // +0x128
+  uint32_t _pad = 0;                   // +0x12C (explicit padding)
+  uint64_t game_hash = 0;             // +0x130
+  int frame_delay = 300;              // +0x138
+  int frame_counter = 0;              // +0x13C
 
   GameStuff(Hijacker &hijacker) noexcept
-      : debugout(hijacker.getLibKernelAddress(nid::sceKernelDebugOutText)), 
+      : debugout(hijacker.getLibKernelAddress(nid::sceKernelDebugOutText)),
         sceKernelLoadStartModule(hijacker.getLibKernelAddress(nid::sceKernelLoadStartModule)),
         sceKernelDlsym(hijacker.getLibKernelAddress(nid::sceKernelDlsym)) {}
 };
 
+// Verify offsets at compile time
+static_assert(offsetof(GameStuff, prx_path)               == 0x28,  "GameStuff::prx_path offset wrong");
+static_assert(offsetof(GameStuff, loaded)                  == 0x128, "GameStuff::loaded offset wrong");
+static_assert(offsetof(GameStuff, game_hash)               == 0x130, "GameStuff::game_hash offset wrong");
+static_assert(offsetof(GameStuff, frame_delay)             == 0x138, "GameStuff::frame_delay offset wrong");
+static_assert(offsetof(GameStuff, frame_counter)           == 0x13C, "GameStuff::frame_counter offset wrong");
+
 struct GameBuilder {
-  static constexpr size_t SHELLCODE_SIZE = 137;
-  static constexpr size_t SHELLCODE_SIZE_AUTO = 210; // Shellcode avec hash check pour multi-PRX
+  static constexpr size_t SHELLCODE_SIZE      = 137;
+  static constexpr size_t SHELLCODE_SIZE_AUTO = 210;
   static constexpr size_t EXTRA_STUFF_ADDR_OFFSET = 2;
 
-  uint8_t shellcode[256]; // Buffer agrandi pour le nouveau shellcode
+  uint8_t shellcode[256];
 
   void setExtraStuffAddr(uintptr_t addr) noexcept {
     *reinterpret_cast<uintptr_t *>(shellcode + EXTRA_STUFF_ADDR_OFFSET) = addr;
   }
 };
 
-// Standard shellcode (waits for controller input)
+// ─────────────────────────────────────────────────────────────────────────────
+//  Standard shellcode — connected check REMOVED (NOPed bytes [71-77])
+//  Raison: sur FW 10.00 le check connected=0x4C peut etre faux si Sony a
+//  change la structure OrbisPadData, ce qui bloque module_start pour toujours.
+//
+//  Ancien code (bytes 71-77):
+//    41 80 7e 4c 00  = CMP BYTE PTR [R14+0x4C], 0  ; connected check
+//    74 2e           = JE skip_load                 ; skip si non connecte
+//  Nouveau code:
+//    90 90 90 90 90  = NOP x5
+//    90 90           = NOP x2
+// ─────────────────────────────────────────────────────────────────────────────
 static constexpr GameBuilder BUILDER_TEMPLATE {
-    0x48, 0xba, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // MOV RDX, [GameStuff addr]
-    0x55, 0x41, 0x57, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x18, 0x48, 0xb8, 0x48, 0x65, 0x6c, 0x6c,
-    0x6f, 0x20, 0x66, 0x72, 0x48, 0x89, 0xd3, 0x49, 0x89, 0xf6, 0x41, 0x89, 0xff, 0x48, 0x89, 0x04,
-    0x24, 0x48, 0xb8, 0x6f, 0x6d, 0x20, 0x42, 0x4f, 0x36, 0x00, 0x00, 0x48, 0x89, 0x44, 0x24, 0x08,
-    0xff, 0x12, 0x89, 0xc5, 0x45, 0x85, 0xff, 0x7e, 0x39, 0x85, 0xed, 0x75, 0x35, 0x41, 0x80, 0x7e,
-    0x4c, 0x00, 0x74, 0x2e, 0x83, 0xbb, 0x28, 0x01, 0x00, 0x00, 0x00, 0x75, 0x25, 0x48, 0x8d, 0x7b,
-    0x28, 0x31, 0xf6, 0x31, 0xd2, 0x31, 0xc9, 0x45, 0x31, 0xc0, 0x45, 0x31, 0xc9, 0xff, 0x53, 0x10,
-    0x48, 0x89, 0xe6, 0x31, 0xff, 0xff, 0x53, 0x08, 0xc7, 0x83, 0x28, 0x01, 0x00, 0x00, 0x01, 0x00,
-    0x00, 0x00, 0x89, 0xe8, 0x48, 0x83, 0xc4, 0x18, 0x5b, 0x41, 0x5e, 0x41, 0x5f, 0x5d, 0xc3
+    // [0-9]   MOV RDX, stuffAddr (patché par setExtraStuffAddr)
+    0x48, 0xba, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // [10-19] prologue
+    0x55, 0x41, 0x57, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x18,
+    // [20-29] MOV RAX, "Hello fr"
+    0x48, 0xb8, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x66, 0x72,
+    // [30-32] MOV RBX, RDX
+    0x48, 0x89, 0xd3,
+    // [33-35] MOV R14, RSI  (data ptr)
+    0x49, 0x89, 0xf6,
+    // [36-38] MOV R15D, EDI (handle)
+    0x41, 0x89, 0xff,
+    // [39-42] MOV [RSP], RAX
+    0x48, 0x89, 0x04, 0x24,
+    // [43-52] MOV RAX, "om BO6\0\0"
+    0x48, 0xb8, 0x6f, 0x6d, 0x20, 0x42, 0x4f, 0x36, 0x00, 0x00,
+    // [53-57] MOV [RSP+8], RAX
+    0x48, 0x89, 0x44, 0x24, 0x08,
+    // [58-59] CALL [RDX] = scePadReadState (original)
+    0xff, 0x12,
+    // [60-61] MOV EBP, EAX (save return value)
+    0x89, 0xc5,
+    // [62-64] TEST R15D, R15D (handle <= 0 ?)
+    0x45, 0x85, 0xff,
+    // [65-66] JLE epilogue
+    0x7e, 0x39,
+    // [67-68] TEST EBP, EBP (scePadReadState retourne != 0 ?)
+    0x85, 0xed,
+    // [69-70] JNZ epilogue
+    0x75, 0x35,
+    // [71-77] FIX FW10: connected check supprime (7x NOP)
+    //         Ancien: CMP BYTE PTR [R14+0x4C],0 / JE skip
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    // [78-84] CMP DWORD PTR [RBX+0x128], 0  (loaded ?)
+    0x83, 0xbb, 0x28, 0x01, 0x00, 0x00, 0x00,
+    // [85-86] JNZ epilogue (deja charge)
+    0x75, 0x25,
+    // [87-90] LEA RDI, [RBX+0x28]  (prx_path)
+    0x48, 0x8d, 0x7b, 0x28,
+    // [91-92] XOR ESI, ESI  (args = 0)
+    0x31, 0xf6,
+    // [93-94] XOR EDX, EDX  (argp = NULL)
+    0x31, 0xd2,
+    // [95-96] XOR ECX, ECX  (flags = 0)
+    0x31, 0xc9,
+    // [97-99] XOR R8D, R8D  (pOpt = NULL)
+    0x45, 0x31, 0xc0,
+    // [100-102] XOR R9D, R9D  (pRes = NULL)
+    0x45, 0x31, 0xc9,
+    // [103-105] CALL [RBX+0x10]  = sceKernelLoadStartModule
+    0xff, 0x53, 0x10,
+    // [106-108] MOV RSI, RSP
+    0x48, 0x89, 0xe6,
+    // [109-110] XOR EDI, EDI
+    0x31, 0xff,
+    // [111-113] CALL [RBX+0x08]  = debugout
+    0xff, 0x53, 0x08,
+    // [114-123] MOV DWORD PTR [RBX+0x128], 1  (loaded = 1)
+    0xc7, 0x83, 0x28, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    // [124-125] MOV EAX, EBP  (restore scePadReadState retval)
+    0x89, 0xe8,
+    // [126-129] ADD RSP, 24
+    0x48, 0x83, 0xc4, 0x18,
+    // [130]     POP RBX
+    0x5b,
+    // [131-132] POP R14
+    0x41, 0x5e,
+    // [133-134] POP R15
+    0x41, 0x5f,
+    // [135]     POP RBP
+    0x5d,
+    // [136]     RET
+    0xc3
 };
 
-// Auto-load shellcode AVEC HASH CHECK (210 bytes)
-// Correspond au code C dans Shellcode.c
-// Permet de charger PLUSIEURS PRX differents (LSO153 + BeachOffline)
+// Auto-load shellcode avec hash check pour multi-PRX (210 bytes) — inchangé
 static constexpr GameBuilder BUILDER_TEMPLATE_AUTO {
     0x48, 0xba, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x55, 0x41, 0x57, 0x41, 0x56, 0x41, 0x54, 0x53, 0x48, 0x83,
@@ -228,7 +305,6 @@ extern "C" int _sceApplicationGetAppId(int pid, int *appId);
 #include <string>
 #include <vector>
 
-// Config structures for injector
 struct PRXConfig {
 	std::string path;
 	int frame_delay;
@@ -236,10 +312,15 @@ struct PRXConfig {
 
 struct GameInjectorConfig {
 	std::map<std::string, std::vector<PRXConfig>> games;
-	std::map<std::string, bool> fakelib_enabled; // default true si absent
+	std::map<std::string, bool> fakelib_enabled;
 };
 
 void plugin_log(const char* fmt, ...);
 bool Is_Game_Running(int &BigAppid, const char* title_id);
-bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_path, bool auto_load, int frame_delay = 300);
+
+// out_stuff_addr (optionnel) : recoit l'adresse du GameStuff alloue dans le
+// process cible, pour lire le flag 'loaded' depuis l'exterieur apres injection.
+bool HookGame(UniquePtr<Hijacker> &hijacker, uint64_t alsr_b, const char* prx_path,
+              bool auto_load, int frame_delay = 300, uintptr_t* out_stuff_addr = nullptr);
+
 GameInjectorConfig parse_injector_config();
