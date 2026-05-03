@@ -365,7 +365,8 @@ static void inject_into_game(pid_t pid, const char *title_id,
     int success_count = 0;
 
     if (hijacker) {
-        uint64_t text_base = hijacker->getEboot()->imagebase();
+        //uint64_t text_base = hijacker->getEboot()->imagebase();
+        uint64_t text_base = hijacker->getEboot()->getTextLoadAddr();
         plugin_log("[PLT] Hijacker OK - text_base: 0x%llx", text_base);
 
         sceKernelPrepareToSuspendProcess(pid);
