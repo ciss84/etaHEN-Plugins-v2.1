@@ -384,34 +384,6 @@ static void inject_into_game(pid_t pid, const char *title_id,
                 sceKernelPrepareToResumeProcess(pid);
                 sceKernelResumeProcess(pid);
 
-                // ── Polling loaded flag (max 30s) ─────────────────────────
-                if (stuff_addr != 0) {
-                    constexpr int POLL_US      = 500000; // 500ms
-                    constexpr int MAX_POLLS    = 60;     // 30s max
-                    int32_t loaded_val = 0;
-                    int     polls      = 0;
-
-                    plugin_log("[PLT] Waiting for shellcode to fire (max 30s)...");
-                    while (polls < MAX_POLLS) {
-                        usleep(POLL_US);
-                        polls++;
-                        hijacker->read(stuff_addr + 0x128, loaded_val);
-                        if (loaded_val != 0) break;
-                    }
-
-                    if (loaded_val != 0) {
-                        plugin_log("[DIAG] OK: shellcode fired after ~%ds for %s (loaded=%d)",
-                                   polls / 2, prx.path.c_str(), loaded_val);
-                    } else {
-                        plugin_log("[DIAG] WARN: shellcode N'A PAS fire pour %s apres 30s!", prx.path.c_str());
-                        plugin_log("[DIAG] Causes possibles:");
-                        plugin_log("[DIAG]   1. scePadReadState non appele par le jeu pendant cette fenetre");
-                        plugin_log("[DIAG]   2. sceKernelLoadStartModule a echoue (verifier adresse loggee)");
-                        plugin_log("[DIAG]   3. PRX path pas visible depuis le sandbox du jeu");
-                        printf_notification("WARN: shellcode skip %s!\nVoir log pour cause.    ", prx.path.c_str());
-                    }
-                }
-
                 if (&prx != &prx_list.back()) {
                     sceKernelPrepareToSuspendProcess(pid);
                     sceKernelSuspendProcess(pid);
@@ -495,7 +467,7 @@ int main()
         return -1;
     }
 
-    printf_notification("Plugin Loader v1.12.2 started     \nBy @84Ciss ");
+    printf_notification("Plugin Loader v1.12.3 started     \nBy @84Ciss ");
     plugin_log("Monitoring SceSysCore.elf (pid %d)...", syscore_pid);
 
     pid_t child_pid = -1;
