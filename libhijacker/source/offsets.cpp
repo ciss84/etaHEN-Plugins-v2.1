@@ -147,8 +147,10 @@ namespace offsets {
                 return 0x63E1274;
             case V300: case V310: case V320: case V321:
                 return 0x6466474;
-            case V400: case V402: case V403: case V450: case V451:
+            case V400: case V403: case V450: case V451:
                 return 0x6506474;
+            case V402:
+                return 0x6505474;    
             case V500: case V502: case V510: case V550:
                 return 0x66466EC; // SECURITY_FLAGS
             case V600: case V602: case V650:
@@ -181,8 +183,10 @@ namespace offsets {
             case V200: case V220: case V225: case V226:
             case V230: case V250: case V270:
             case V300: case V310: case V320: case V321:
-            case V400: case V402: case V403: case V450: case V451:
+            case V400: case V403: case V450: case V451:
                 return 0x6506498;
+            case V402:
+                return 0x6505498;    
             case V500: case V502: case V510: case V550:
                 return 0x6646710; // 0x6241098
             case V600: case V602: case V650:
@@ -215,8 +219,10 @@ namespace offsets {
             case V200: case V220: case V225: case V226:
             case V230: case V250: case V270:
             case V300: case V310: case V320: case V321:
-            case V400: case V402: case V403: case V450: case V451:
+            case V400: case V403: case V450: case V451:
                 return 0x6506500;
+            case V402:
+                return 0x6505500;       
             case V500: case V502: case V510: case V550: 
                 return 0x6646778; //qa flags offset 0x6646710
             case V600: case V602: case V650:
@@ -252,8 +258,10 @@ namespace offsets {
                 return 0x67134C0;
             case V300: case V310: case V320: case V321:
                 return 0x67AB4C0;
-            case V400: case V402: case V403: case V450: case V451:
+            case V400: case V403: case V450: case V451:
                 return 0x66E74C0;
+            case V402:    
+                return 0x66E64C0;
             case V500: case V502: case V510: case V550:
                 return 0x6853510;
             case V600: case V602: case V650:
