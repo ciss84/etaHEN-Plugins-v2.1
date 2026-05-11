@@ -383,7 +383,10 @@ static void inject_into_game(pid_t pid, const char *title_id,
 
                 sceKernelPrepareToResumeProcess(pid);
                 sceKernelResumeProcess(pid);
-
+                
+                // Attends que le PRX se charge (~2-3 secondes)
+                sleep(3);
+                
                 if (&prx != &prx_list.back()) {
                     sceKernelPrepareToSuspendProcess(pid);
                     sceKernelSuspendProcess(pid);
