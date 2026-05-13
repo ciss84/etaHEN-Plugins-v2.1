@@ -62,9 +62,16 @@ static constexpr uint32_t V1001 = 0x10010000;
 static constexpr uint32_t V1020 = 0x10200000;
 static constexpr uint32_t V1040 = 0x10400000;
 static constexpr uint32_t V1060 = 0x10600000;
-
-
-
+static constexpr uint32_t V1100 = 0x11000000;
+static constexpr uint32_t V1120 = 0x11200000;
+static constexpr uint32_t V1140 = 0x11400000;
+static constexpr uint32_t V1160 = 0x11600000;
+static constexpr uint32_t V1200 = 0x12000000;
+static constexpr uint32_t V1202 = 0x12020000;
+static constexpr uint32_t V1220 = 0x12200000;
+static constexpr uint32_t V1240 = 0x12400000;
+static constexpr uint32_t V1260 = 0x12600000;
+static constexpr uint32_t V1270 = 0x12700000;
 
 uint32_t getSystemSwVersion() {
     static uint32_t version;
@@ -94,8 +101,7 @@ namespace offsets {
             case V300: case V310: case V320: case V321:
                 allprocOffset = 0x276DC58;
                 break;
-            case V400: case V402: case V403: case V450:
-            case V451:
+            case V400: case V402: case V403: case V450: case V451:
                 allprocOffset = 0x27EDCB8;
                 break;
             case V500: case V502: case V510: case V550:
@@ -110,15 +116,18 @@ namespace offsets {
             case V800: case V820: case V840: case V860:
                 allprocOffset = 0x2875D50;
                 break;
-            case V900:
-                allprocOffset = 0x2755D50;
-                break;
-            case V905: case V920: case V940: case V960:
+           case V900: case V905: case V920: case V940: case V960:
                 allprocOffset = 0x2755D50;
                 break;
             case V1000: case V1001: case V1020: case V1040: case V1060:
                 allprocOffset = 0x2765D70;
                 break;
+            case V1100: case V1120: case V1140: case V1160:
+                allprocOffset = 0x2875D70;
+                break;                
+            case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
+                allprocOffset = 0x2885E00;
+                break; 
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 allprocOffset = -1;
@@ -138,12 +147,12 @@ namespace offsets {
                 return 0x63E1274;
             case V300: case V310: case V320: case V321:
                 return 0x6466474;
-            case V400:
+            case V400: case V403: case V450: case V451:
                 return 0x6506474;
-            case V402: case V403: case V450: case V451:
-                return 0x6505474;
+            case V402:
+                return 0x6505474;    
             case V500: case V502: case V510: case V550:
-                return 0x66466EC;
+                return 0x66466EC; // SECURITY_FLAGS
             case V600: case V602: case V650:
                 return 0x65968EC;
             case V700: case V701: case V720: case V740: case V760: case V761:
@@ -156,6 +165,10 @@ namespace offsets {
                 return 0x0D73064;
             case V1000: case V1001: case V1020: case V1040: case V1060:
                 return 0x0D79064;
+            case V1100: case V1120: case V1140: case V1160:
+                return 0x0D8C064;                
+            case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
+                return 0x0D83064;               
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -170,22 +183,28 @@ namespace offsets {
             case V200: case V220: case V225: case V226:
             case V230: case V250: case V270:
             case V300: case V310: case V320: case V321:
-            case V400: case V402: case V403: case V450:
-            case V451:
+            case V400: case V403: case V450: case V451:
+                return 0x6506498;
+            case V402:
+                return 0x6505498;    
             case V500: case V502: case V510: case V550:
-                return 0x6241098;
+                return 0x6646710; // 0x6241098
             case V600: case V602: case V650:
-                return 0x65968EC + 0x24;
+                return 0x6596910;
             case V700: case V701: case V720: case V740: case V760: case V761:
-                return 0x0AC8064 + 0x24;
+                return 0x0AC8088;
             case V800: case V820: case V840: case V860:
-                return 0x0AC3064 + 0x24;
+                return 0x0AC3088;
             case V900:
-                return 0x0D72064 + 0x24;
+                return 0x0D72088;
             case V905: case V920: case V940: case V960:
-                return 0x0D73064 + 0x24;
+                return 0x0D73088;
             case V1000: case V1001: case V1020: case V1040: case V1060:
-                return 0x0D79064 + 0x24;
+                return 0x0D79088;
+            case V1100: case V1120: case V1140: case V1160:
+                return 0x0D8C088;                
+            case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
+                return 0x0D83088;                 
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -200,22 +219,28 @@ namespace offsets {
             case V200: case V220: case V225: case V226:
             case V230: case V250: case V270:
             case V300: case V310: case V320: case V321:
-            case V400: case V402: case V403: case V450:
-            case V451:
-            case V500: case V502: case V510: case V550:
-                return 0x6646710;
+            case V400: case V403: case V450: case V451:
+                return 0x6506500;
+            case V402:
+                return 0x6505500;       
+            case V500: case V502: case V510: case V550: 
+                return 0x6646778; //qa flags offset 0x6646710
             case V600: case V602: case V650:
-                return 0x65968EC + 0x8C;
+                return 0x6596978;
             case V700: case V701: case V720: case V740: case V760: case V761:
-                return 0x0AC8064 + 0x8C;
+                return 0x0AC80F0;
             case V800: case V820: case V840: case V860:
-                return 0x0AC3064 + 0x8C;
+                return 0x0AC30F0;
             case V900:
-                return 0x0D72064 + 0x8C;
+                return 0x0D720F0;
             case V905: case V920: case V940: case V960:
-                return 0x0D73064 + 0x8C;
+                return 0x0D730F0;
             case V1000: case V1001: case V1020: case V1040: case V1060:
-                return 0x0D79064 + 0x8C;
+                return 0x0D790F0;
+            case V1100: case V1120: case V1140: case V1160:
+                return 0x0D8C0F0;                
+            case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
+                return 0x0D830F0;                 
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -233,9 +258,10 @@ namespace offsets {
                 return 0x67134C0;
             case V300: case V310: case V320: case V321:
                 return 0x67AB4C0;
-            case V400: case V402: case V403: case V450:
-            case V451:
+            case V400: case V403: case V450: case V451:
                 return 0x66E74C0;
+            case V402:    
+                return 0x66E64C0;
             case V500: case V502: case V510: case V550:
                 return 0x6853510;
             case V600: case V602: case V650:
@@ -244,12 +270,14 @@ namespace offsets {
                 return 0x30C7510;
             case V800: case V820: case V840: case V860:
                 return 0x30FB510;
-            case V900:
-                return 0x2FDB510;
-            case V905: case V920: case V940: case V960:
+            case V900: case V905: case V920: case V940: case V960:
                 return 0x2FDB510;
             case V1000: case V1001: case V1020: case V1040: case V1060:
                 return 0x2FA3510;
+            case V1100: case V1120: case V1140: case V1160:
+                return 0x30B7510;                
+            case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
+                return 0x30D7510;  
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
