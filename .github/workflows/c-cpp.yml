@@ -46,6 +46,19 @@ jobs:
     - name: Build SDK-Binaries
       run: bash ./build.sh
 
+    - name: Build libhijacker
+      run: |
+        mkdir -p libhijacker/build
+        cmake -S libhijacker -B libhijacker/build \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DPS5_PAYLOAD_SDK=${{ env.PS5_PAYLOAD_SDK }} \
+          -DV_FW=0x0000
+        cmake --build libhijacker/build
+        mkdir -p libhijacker_out
+        cp libhijacker/build/libhijacker.a libhijacker_out/
+        cd libhijacker_out && zip ../libhijacker.zip libhijacker.a
+
     - name: Upload artifacts
       uses: actions/upload-artifact@main
       with:
@@ -54,3 +67,4 @@ jobs:
               ELF_samples/bin/*.elf
               Plugin_samples/bin/*.elf
               Plugin_samples/bin/*.plugin
+              libhijacker.zip
