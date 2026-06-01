@@ -51,7 +51,7 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        sed -i 's|set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}|include_directories(SYSTEM "$ENV{PS5_PAYLOAD_SDK}/include/freebsd")\nset(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}|' libhijacker/CMakeLists.txt
+        sed -i 's|include_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include")|include_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include")\ninclude_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include/freebsd")|' libhijacker/CMakeLists.txt
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
           -DCMAKE_C_COMPILER=clang \
