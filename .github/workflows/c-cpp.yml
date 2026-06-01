@@ -47,6 +47,9 @@ jobs:
       run: bash ./build.sh
 
     - name: Build libhijacker
+      env:
+        CFLAGS: "--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd"
+        CXXFLAGS: "--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd -fno-exceptions"
       run: |
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
@@ -57,9 +60,7 @@ jobs:
           -DCMAKE_CXX_COMPILER_WORKS=1 \
           -DCMAKE_ASM_COMPILER_WORKS=1 \
           -DPS5_PAYLOAD_SDK=${{ env.PS5_PAYLOAD_SDK }} \
-          -DV_FW=0x0000 \
-          -DCMAKE_C_FLAGS="--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd" \
-          -DCMAKE_CXX_FLAGS="--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd -fno-exceptions"
+          -DV_FW=0x0000
         cmake --build libhijacker/build
         mkdir -p libhijacker_out
         cp libhijacker/build/libhijacker.a libhijacker_out/
