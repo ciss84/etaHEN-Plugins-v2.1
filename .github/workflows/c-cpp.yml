@@ -51,21 +51,9 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        echo "=== SDK include/freebsd check ==="
-        ls ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd/sys/types.h || echo "NOT FOUND"
-        echo "=== CMakeLists before patch ==="
-        cat libhijacker/CMakeLists.txt
-        mkdir -p libhijacker/build
-        cmake -S libhijacker -B libhijacker/build \
-          -DCMAKE_C_COMPILER=clang \
-          -DCMAKE_CXX_COMPILER=clang++ \
-          -DCMAKE_ASM_COMPILER=clang \
-          -DCMAKE_C_COMPILER_WORKS=1 \
-          -DCMAKE_CXX_COMPILER_WORKS=1 \
-          -DCMAKE_ASM_COMPILER_WORKS=1 \
-          -DPS5_PAYLOAD_SDK=${{ env.PS5_PAYLOAD_SDK }} \
-          -DV_FW=0x0000
-        cmake --build libhijacker/build -- VERBOSE=1 2>&1 | head -30
+        echo "=== SDK include tree ==="
+        find ${{ env.PS5_PAYLOAD_SDK }}/include -name "types.h" 2>/dev/null || echo "no types.h found"
+        find ${{ env.PS5_PAYLOAD_SDK }} -name "types.h" 2>/dev/null | head -20
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
