@@ -384,7 +384,7 @@ static void inject_into_game(pid_t pid, const char *title_id,
                 sceKernelResumeProcess(pid);
                 
                 // Attends que le PRX se charge (~2-3 secondes)
-                sleep(3);
+                sleep(10);
 
 // Lire le flag loaded depuis GameStuff
 if (stuff_addr != 0) {
