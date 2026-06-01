@@ -51,34 +51,22 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        CLANG_MAJOR=$(clang --version | grep -oP '(?<=clang version )\d+')
-        CXXINC=$(find /usr/lib/llvm-${CLANG_MAJOR}/include/c++ -maxdepth 0 2>/dev/null || find /usr/include/c++ -maxdepth 1 -type d | sort -V | tail -1)
-        echo "C++ headers: $CXXINC"
-
-        cat > /tmp/patch_cmake.py << EOF
-import os, sys
-path = "libhijacker/CMakeLists.txt"
-sdk = sys.argv[1]
-cxxinc = sys.argv[2]
-with open(path, "r") as f:
-    content = f.read()
-content = content.replace(
-    'set(CMAKE_C_FLAGS "--target=x86_64-sie-ps5',
-    'set(CMAKE_C_FLAGS "-isystem ' + sdk + '/target/include --target=x86_64-sie-ps5',
-    1
-)
-content = content.replace(
-    '-Wall -Wextra -Wmove -Wmost -Werror -fno-exceptions")',
-    '-Wall -Wextra -Wmove -Wmost -Wno-error -Wno-format -fno-exceptions -isystem ' + cxxinc + '")',
-    1
-)
-with open(path, "w") as f:
-    f.write(content)
-print("Patched OK")
-EOF
-
-        python3 /tmp/patch_cmake.py "${{ env.PS5_PAYLOAD_SDK }}" "$CXXINC"
-
+        # Patch CMakeLists: ajoute target/include dans la ligne CMAKE_C_FLAGS base (ligne 64)
+        # CMAKE_CXX_FLAGS prend CMAKE_C_FLAGS comme base donc ca se propage automatiquement
+        python3 - << 'PYEOF'
+        import re, os
+        path = "libhijacker/CMakeLists.txt"
+        sdk = os.environ["PS5_PAYLOAD_SDK"]
+        with open(path, "r") as f:
+            content = f.read()
+        # Injecte -isystem dans la premiere ligne qui set CMAKE_C_FLAGS
+        old = 'set(CMAKE_C_FLAGS "--target=x86_64-sie-ps5'
+        new = f'set(CMAKE_C_FLAGS "-isystem {sdk}/target/include --target=x86_64-sie-ps5'
+        content = content.replace(old, new, 1)
+        with open(path, "w") as f:
+            f.write(content)
+        print("Patched OK")
+        PYEOF
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
           -DCMAKE_C_COMPILER=clang \
