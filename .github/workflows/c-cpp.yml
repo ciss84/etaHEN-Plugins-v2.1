@@ -51,7 +51,19 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        sed -i 's|include_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include")|include_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include")\ninclude_directories\t(SYSTEM "${PS5_PAYLOAD_SDK}/include/freebsd")|' libhijacker/CMakeLists.txt
+        python3 - << 'PYEOF'
+        import os
+        path = "libhijacker/CMakeLists.txt"
+        sdk = os.environ["PS5_PAYLOAD_SDK"]
+        with open(path, "r") as f:
+            content = f.read()
+        inject = f'include_directories(SYSTEM "{sdk}/include/freebsd")\n'
+        if inject not in content:
+            content = inject + content
+        with open(path, "w") as f:
+            f.write(content)
+        print("Patched CMakeLists.txt")
+        PYEOF
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
           -DCMAKE_C_COMPILER=clang \
