@@ -172,7 +172,7 @@ static_assert(offsetof(GameStuff, frame_delay)             == 0x138, "GameStuff:
 static_assert(offsetof(GameStuff, frame_counter)           == 0x13C, "GameStuff::frame_counter offset wrong");
 
 struct GameBuilder {
-  static constexpr size_t SHELLCODE_SIZE      = 137;
+  static constexpr size_t SHELLCODE_SIZE      = 141;
   static constexpr size_t SHELLCODE_SIZE_AUTO = 210;
   static constexpr size_t EXTRA_STUFF_ADDR_OFFSET = 2;
 
@@ -204,9 +204,9 @@ static constexpr GameBuilder BUILDER_TEMPLATE {
     0x48, 0xb8, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x66, 0x72,
     // [30-32] MOV RBX, RDX
     0x48, 0x89, 0xd3,
-    // [33-35] MOV R14, RSI  (data ptr)
+    // [33-35] MOV R14, RSI
     0x49, 0x89, 0xf6,
-    // [36-38] MOV R15D, EDI (handle)
+    // [36-38] MOV R15D, EDI
     0x41, 0x89, 0xff,
     // [39-42] MOV [RSP], RAX
     0x48, 0x89, 0x04, 0x24,
@@ -216,17 +216,16 @@ static constexpr GameBuilder BUILDER_TEMPLATE {
     0x48, 0x89, 0x44, 0x24, 0x08,
     // [58-59] CALL [RDX] = scePadReadState (original)
     0xff, 0x12,
-    // [60-61] MOV EBP, EAX (save return value)
+    // [60-61] MOV EBP, EAX (save retval)
     0x89, 0xc5,
-    // [62-70] NOP x9 — bypass handle + retval checks (test FW7.6x+)
+    // [62-70] NOP x9
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    // [71-77] FIX FW10: connected check supprime (7x NOP)
-    //         Ancien: CMP BYTE PTR [R14+0x4C],0 / JE skip
+    // [71-77] NOP x7 (FW10 fix - connected check supprimé)
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
     // [78-84] CMP DWORD PTR [RBX+0x128], 0  (loaded ?)
     0x83, 0xbb, 0x28, 0x01, 0x00, 0x00, 0x00,
-    // [85-86] JNZ epilogue (deja charge)
-    0x75, 0x25,
+    // [85-86] JNZ epilogue (déjà chargé)
+    0x75, 0x29,
     // [87-90] LEA RDI, [RBX+0x28]  (prx_path)
     0x48, 0x8d, 0x7b, 0x28,
     // [91-92] XOR ESI, ESI  (args = 0)
@@ -239,29 +238,33 @@ static constexpr GameBuilder BUILDER_TEMPLATE {
     0x45, 0x31, 0xc0,
     // [100-102] XOR R9D, R9D  (pRes = NULL)
     0x45, 0x31, 0xc9,
-    // [103-105] CALL [RBX+0x10]  = sceKernelLoadStartModule
+    // [103-105] CALL [RBX+0x10] = sceKernelLoadStartModule
     0xff, 0x53, 0x10,
-    // [106-108] MOV RSI, RSP
+    // [106-107] TEST EAX, EAX  ← FIX: check retour
+    0x85, 0xc0,
+    // [108-109] JS epilogue    ← FIX: si erreur, skip loaded=1
+    0x78, 0x12,
+    // [110-112] MOV RSI, RSP  (msg debugout)
     0x48, 0x89, 0xe6,
-    // [109-110] XOR EDI, EDI
+    // [113-114] XOR EDI, EDI
     0x31, 0xff,
-    // [111-113] CALL [RBX+0x08]  = debugout
+    // [115-117] CALL [RBX+0x08] = debugout
     0xff, 0x53, 0x08,
-    // [114-123] MOV DWORD PTR [RBX+0x128], 1  (loaded = 1)
+    // [118-127] MOV DWORD PTR [RBX+0x128], 1  (loaded = 1)
     0xc7, 0x83, 0x28, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-    // [124-125] MOV EAX, EBP  (restore scePadReadState retval)
+    // [128-129] MOV EAX, EBP  ← epilogue
     0x89, 0xe8,
-    // [126-129] ADD RSP, 24
+    // [130-133] ADD RSP, 24
     0x48, 0x83, 0xc4, 0x18,
-    // [130]     POP RBX
+    // [134] POP RBX
     0x5b,
-    // [131-132] POP R14
+    // [135-136] POP R14
     0x41, 0x5e,
-    // [133-134] POP R15
+    // [137-138] POP R15
     0x41, 0x5f,
-    // [135]     POP RBP
+    // [139] POP RBP
     0x5d,
-    // [136]     RET
+    // [140] RET
     0xc3
 };
 
