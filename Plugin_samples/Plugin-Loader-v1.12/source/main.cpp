@@ -470,7 +470,7 @@ int main()
         return -1;
     }
 
-    printf_notification("Plugin Loader v1.12.5 started     \nBy @84Ciss ");
+    printf_notification("Plugin Loader v1.12.5: started     \nBy @84Ciss ");
     plugin_log("Monitoring SceSysCore.elf (pid %d)...", syscore_pid);
 
     pid_t child_pid = -1;

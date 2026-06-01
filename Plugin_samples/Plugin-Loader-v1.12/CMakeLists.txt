@@ -10,7 +10,7 @@ set(basename "Plugin-Loader-v1.12")
 project(${basename} C CXX)
 
 set(PLUGIN_TITLE_ID "PLUG00012")
-set(PLUGIN_VERSION "1.12.5")
+set(PLUGIN_VERSION "1.12")
 
 # Language Standard Defaults
 set(CMAKE_C_STANDARD 17)
