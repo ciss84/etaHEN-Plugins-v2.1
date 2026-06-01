@@ -383,15 +383,17 @@ static void inject_into_game(pid_t pid, const char *title_id,
                 sceKernelPrepareToResumeProcess(pid);
                 sceKernelResumeProcess(pid);
                 
-                // Attends que le PRX se charge (~2-3 secondes)
+                // Attends que le PRX se charge
                 sleep(10);
 
-// Lire le flag loaded depuis GameStuff
-if (stuff_addr != 0) {
-    int loaded_flag = 0;
-    hijacker->read(stuff_addr + 0x128, &loaded_flag, sizeof(loaded_flag));
-    plugin_log("[PLT] loaded flag @ 0x%llx = %d", stuff_addr + 0x128, loaded_flag);
-}
+                // Diagnostic: lire loaded + last_lsm_result depuis GameStuff
+                if (stuff_addr != 0) {
+                    int loaded_flag = 0;
+                    int lsm_result  = 0;
+                    hijacker->read(stuff_addr + 0x128, &loaded_flag, sizeof(loaded_flag));
+                    hijacker->read(stuff_addr + 0x12C, &lsm_result,  sizeof(lsm_result));
+                    plugin_log("[PLT] loaded=%d | LoadStartModule result=0x%08x", loaded_flag, (uint32_t)lsm_result);
+                }
                 
                 if (&prx != &prx_list.back()) {
                     sceKernelPrepareToSuspendProcess(pid);
