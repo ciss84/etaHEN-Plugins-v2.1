@@ -47,7 +47,6 @@ static constexpr uint32_t V720 = 0x7200000;
 static constexpr uint32_t V740 = 0x7400000;
 static constexpr uint32_t V760 = 0x7600000;
 static constexpr uint32_t V761 = 0x7610000;
-// New firmware versions
 static constexpr uint32_t V800 = 0x8000000;
 static constexpr uint32_t V820 = 0x8200000;
 static constexpr uint32_t V840 = 0x8400000;
@@ -72,6 +71,8 @@ static constexpr uint32_t V1220 = 0x12200000;
 static constexpr uint32_t V1240 = 0x12400000;
 static constexpr uint32_t V1260 = 0x12600000;
 static constexpr uint32_t V1270 = 0x12700000;
+static constexpr uint32_t V1300 = 0x13000000;
+static constexpr uint32_t V1320 = 0x13200000;
 
 uint32_t getSystemSwVersion() {
     static uint32_t version;
@@ -128,6 +129,9 @@ namespace offsets {
             case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
                 allprocOffset = 0x2885E00;
                 break; 
+            case V1300: case V1320:
+                allprocOffset = 0x28C5E00;
+                break;                 
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 allprocOffset = -1;
@@ -168,7 +172,9 @@ namespace offsets {
             case V1100: case V1120: case V1140: case V1160:
                 return 0x0D8C064;                
             case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
-                return 0x0D83064;               
+                return 0x0D83064; 
+            case V1300: case V1320:
+                return 0x0D99064;                                
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -204,7 +210,9 @@ namespace offsets {
             case V1100: case V1120: case V1140: case V1160:
                 return 0x0D8C088;                
             case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
-                return 0x0D83088;                 
+                return 0x0D83088; 
+            case V1300: case V1320:
+                return 0x0D99088;                                  
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -240,7 +248,9 @@ namespace offsets {
             case V1100: case V1120: case V1140: case V1160:
                 return 0x0D8C0F0;                
             case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
-                return 0x0D830F0;                 
+                return 0x0D830F0;
+            case V1300: case V1320:
+                return 0x0D990F0;                                   
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
@@ -277,7 +287,9 @@ namespace offsets {
             case V1100: case V1120: case V1140: case V1160:
                 return 0x30B7510;                
             case V1200: case V1202: case V1220: case V1240: case V1260: case V1270:
-                return 0x30D7510;  
+                return 0x30D7510; 
+            case V1300: case V1320:
+                return 0x3133510;                 
             default:
                 printf("Unsupported firmware version: 0x%x\n", getSystemSwVersion() & VERSION_MASK);
                 return -1;
