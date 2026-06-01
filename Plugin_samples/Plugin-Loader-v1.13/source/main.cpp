@@ -322,9 +322,8 @@ static void inject_into_game(pid_t pid, const char *title_id,
     char sandbox_id[32] = {};
     char *fakelib_mount = nullptr;
 
-    auto fakelib_cfg  = config.fakelib_enabled.find(std::string(title_id));
     bool fakelib_wanted = (strncmp(title_id, "PPSA", 4) == 0) &&
-                          (fakelib_cfg == config.fakelib_enabled.end() || fakelib_cfg->second);
+                          config.is_fakelib_enabled(std::string(title_id));
 
     if (fakelib_wanted && resolve_sandbox_id(title_id, sandbox_id, sizeof(sandbox_id))) {
         char fakelib_check[PATH_MAX];
@@ -517,9 +516,8 @@ int main()
 
                 char sid[32] = {};
                 char *fml = nullptr;
-                auto fml_cfg = config.fakelib_enabled.find(std::string(title_id));
                 bool fml_wanted = (strncmp(title_id, "PPSA", 4) == 0) &&
-                                  (fml_cfg == config.fakelib_enabled.end() || fml_cfg->second);
+                                  config.is_fakelib_enabled(std::string(title_id));
                 if (fml_wanted && resolve_sandbox_id(title_id, sid, sizeof(sid))) {
                     char fakelib_check[PATH_MAX];
                     snprintf(fakelib_check, sizeof(fakelib_check),
