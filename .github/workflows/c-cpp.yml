@@ -51,19 +51,6 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        python3 - << 'PYEOF'
-        import os
-        path = "libhijacker/CMakeLists.txt"
-        sdk = os.environ["PS5_PAYLOAD_SDK"]
-        with open(path, "r") as f:
-            content = f.read()
-        inject = f'include_directories(SYSTEM "{sdk}/include/freebsd")\n'
-        if inject not in content:
-            content = inject + content
-        with open(path, "w") as f:
-            f.write(content)
-        print("Patched CMakeLists.txt")
-        PYEOF
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
           -DCMAKE_C_COMPILER=clang \
@@ -73,7 +60,8 @@ jobs:
           -DCMAKE_CXX_COMPILER_WORKS=1 \
           -DCMAKE_ASM_COMPILER_WORKS=1 \
           -DPS5_PAYLOAD_SDK=${{ env.PS5_PAYLOAD_SDK }} \
-          -DV_FW=0x0000
+          -DV_FW=0x0000 \
+          "-DC_FLAGS=-isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd"
         cmake --build libhijacker/build
         mkdir -p libhijacker_out
         cp libhijacker/build/libhijacker.a libhijacker_out/
