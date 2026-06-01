@@ -51,9 +51,21 @@ jobs:
 
     - name: Build libhijacker
       run: |
-        echo "=== SDK include tree ==="
-        find ${{ env.PS5_PAYLOAD_SDK }}/include -name "types.h" 2>/dev/null || echo "no types.h found"
-        find ${{ env.PS5_PAYLOAD_SDK }} -name "types.h" 2>/dev/null | head -20
+        mkdir -p libhijacker/build
+        cmake -S libhijacker -B libhijacker/build \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_ASM_COMPILER=clang \
+          -DCMAKE_C_COMPILER_WORKS=1 \
+          -DCMAKE_CXX_COMPILER_WORKS=1 \
+          -DCMAKE_ASM_COMPILER_WORKS=1 \
+          -DPS5_PAYLOAD_SDK=${{ env.PS5_PAYLOAD_SDK }} \
+          -DV_FW=0x0000 \
+          "-DCXX_FLAGS=-isystem ${{ env.PS5_PAYLOAD_SDK }}/target/include"
+        cmake --build libhijacker/build
+        mkdir -p libhijacker_out
+        cp libhijacker/build/libhijacker.a libhijacker_out/
+        cd libhijacker_out && zip ../libhijacker.zip libhijacker.a
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
@@ -63,3 +75,4 @@ jobs:
               ELF_samples/bin/*.elf
               Plugin_samples/bin/*.elf
               Plugin_samples/bin/*.plugin
+              libhijacker.zip
