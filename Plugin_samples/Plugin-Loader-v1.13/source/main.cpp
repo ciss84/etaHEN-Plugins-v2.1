@@ -385,6 +385,13 @@ static void inject_into_game(pid_t pid, const char *title_id,
                 
                 // Attends que le PRX se charge (~2-3 secondes)
                 sleep(3);
+
+// Lire le flag loaded depuis GameStuff
+if (stuff_addr != 0) {
+    int loaded_flag = 0;
+    hijacker->read(stuff_addr + 0x128, &loaded_flag, sizeof(loaded_flag));
+    plugin_log("[PLT] loaded flag @ 0x%llx = %d", stuff_addr + 0x128, loaded_flag);
+}
                 
                 if (&prx != &prx_list.back()) {
                     sceKernelPrepareToSuspendProcess(pid);
