@@ -1,4 +1,4 @@
-name: CI
+name: XOR
 
 on:
   push:
@@ -45,12 +45,13 @@ jobs:
 
     - name: Build SDK-Binaries
       run: bash ./build.sh
+      env:
+        CFLAGS: "-O2 -DNDEBUG"
+        CXXFLAGS: "-O2 -DNDEBUG"
 
     - name: Build libhijacker
-      env:
-        CFLAGS: "--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd"
-        CXXFLAGS: "--target=x86_64-sie-ps5 -march=znver2 -isystem ${{ env.PS5_PAYLOAD_SDK }}/include -isystem ${{ env.PS5_PAYLOAD_SDK }}/include/freebsd -fno-exceptions"
       run: |
+        sed -i 's|set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}|include_directories(SYSTEM "$ENV{PS5_PAYLOAD_SDK}/include/freebsd")\nset(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}|' libhijacker/CMakeLists.txt
         mkdir -p libhijacker/build
         cmake -S libhijacker -B libhijacker/build \
           -DCMAKE_C_COMPILER=clang \
