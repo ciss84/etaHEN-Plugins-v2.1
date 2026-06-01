@@ -13,5 +13,4 @@ include_directories(SYSTEM "${PS5_PAYLOAD_SDK}/include")
 
 add_subdirectory(libhijacker)
 add_subdirectory(Plugin_samples/Plugin-Loader-v1.12)
-add_subdirectory(Plugin_samples/Plugin-Loader-v1.12.6)
 add_subdirectory(Plugin_samples/Plugin-Loader-v1.13)

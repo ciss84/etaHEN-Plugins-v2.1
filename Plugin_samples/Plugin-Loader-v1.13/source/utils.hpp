@@ -307,6 +307,14 @@ struct PRXConfig {
 struct GameInjectorConfig {
 	std::map<std::string, std::vector<PRXConfig>> games;
 	std::map<std::string, bool> fakelib_enabled;
+	bool fakelib_default = true;  // fallback global si pas de cle par TID
+
+	bool is_fakelib_enabled(const std::string &tid) const {
+		auto it = fakelib_enabled.find(tid);
+		if (it != fakelib_enabled.end())
+			return it->second;
+		return fakelib_default;
+	}
 };
 
 void plugin_log(const char* fmt, ...);
