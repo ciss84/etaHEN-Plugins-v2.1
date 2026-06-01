@@ -57,13 +57,11 @@ jobs:
         sdk = os.environ["PS5_PAYLOAD_SDK"]
         with open(path, "r") as f:
             content = f.read()
-        # Fix 1: ajoute target/include + cstdint dans CMAKE_C_FLAGS (se propage dans CMAKE_CXX_FLAGS)
         content = content.replace(
             'set(CMAKE_C_FLAGS "--target=x86_64-sie-ps5',
-            'set(CMAKE_C_FLAGS "-isystem ' + sdk + '/target/include -isystem /usr/include/c++/13 -isystem /usr/include/x86_64-linux-gnu/c++/13 --target=x86_64-sie-ps5',
+            'set(CMAKE_C_FLAGS "-isystem ' + sdk + '/target/include -isystem /usr/include/c++/13 -isystem /usr/include/x86_64-linux-gnu/c++/13 -isystem /usr/include -isystem /usr/include/x86_64-linux-gnu --target=x86_64-sie-ps5',
             1
         )
-        # Fix 2: desactive -Werror
         content = content.replace('-Werror -fno-exceptions', '-Wno-error -Wno-format -fno-exceptions', 1)
         with open(path, "w") as f:
             f.write(content)
